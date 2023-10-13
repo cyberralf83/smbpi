@@ -18,7 +18,7 @@ echo "The user logged in is: $LOGGED_IN_USER"
 echo "[$LOGGED_IN_USER]
    comment = Home Directories
    browseable = no
-   path = /home/$LOGGED_IN_USER/
+   path = /home/$LOGGED_IN_USER
    read only = no
    create mask = 0700
    directory mask = 0700
