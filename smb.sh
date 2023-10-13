@@ -31,6 +31,9 @@ systemctl restart smbd
 USER=$(logname)
 sudo smbpasswd -a $USER
 
+# Restart samba to apply changes
+systemctl restart smbd
+
 # Print network info and SMB URL
 IP_ADDR=$(hostname -I | awk '{print $1}')
 HOSTNAME=$(hostname | awk '{print}')
