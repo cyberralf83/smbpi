@@ -1,7 +1,4 @@
 # smbpi
 Install SMB on Raspberry Pi 
 
-1. git clone https://github.com/cyberralf83/smbpi
-2. cd smbpi
-3. chmod +x smb.sh
-4. sudo ./smb.sh
+1. curl -s https://raw.githubusercontent.com/cyberralf83/smbpi/smb.sh | sudo bash 
