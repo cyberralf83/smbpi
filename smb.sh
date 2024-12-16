@@ -53,10 +53,6 @@ systemctl restart smbd nmbd || {
     exit 1
 }
 
-# Set up Samba password interactively
-echo "Please set a Samba password for $LOGGED_IN_USER"
-smbpasswd -a "$LOGGED_IN_USER"
-
 # Configure firewall if UFW is present
 if command -v ufw >/dev/null 2>&1; then
     ufw allow samba
@@ -72,5 +68,9 @@ echo "Connect using these URLs:"
 echo "smb://$IP_ADDR/$LOGGED_IN_USER"
 echo "smb://$HOSTNAME.local/$LOGGED_IN_USER"
 echo ""
-echo "Important: Make sure your user has proper Unix permissions on their home directory:"
-echo "sudo chmod 755 /home/$LOGGED_IN_USER"
+echo "Important next steps:"
+echo "1. Set your Samba password by running:"
+echo "   sudo smbpasswd -a $LOGGED_IN_USER"
+echo ""
+echo "2. Make sure your user has proper Unix permissions:"
+echo "   sudo chmod 755 /home/$LOGGED_IN_USER"
