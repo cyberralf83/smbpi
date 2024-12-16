@@ -3,74 +3,34 @@
 # Exit on error
 set -e
 
-# Check if running as root
-if [ "$EUID" -ne 0 ]; then 
-    echo "Please run as root"
-    exit 1
-fi
-
 # Update package list and install samba
 apt-get update
 apt-get install -y samba
 
-# Backup the original smb.conf without timestamp
-cp /etc/samba/smb.conf /etc/samba/smb.conf.backup
+# Backup the original smb.conf
+cp /etc/samba/smb.conf /etc/samba/smb.conf.bak
 
-# Get logged in user more reliably
-if [ -n "$SUDO_USER" ]; then
-    LOGGED_IN_USER="$SUDO_USER"
-elif [ -n "$LOGNAME" ]; then
-    LOGGED_IN_USER="$LOGNAME"
-else
-    echo "Error: Could not determine the logged-in user"
-    exit 1
-fi
+# Add configuration to share the home directories
+LOGGED_IN_USER=$(logname)
 
 echo "The user logged in is: $LOGGED_IN_USER"
 
-# Ensure the [homes] section exists and modify it
-if ! grep -q "^\[homes\]" /etc/samba/smb.conf; then
-    echo "Error: [homes] section not found in smb.conf"
-    exit 1
-fi
+# Restart samba to apply changes
+systemctl restart smbd
 
-# Add settings to [homes] section more reliably
-sed -i '/\[homes\]/,/\[/ {
-    /inherit permissions/! s/\[homes\]/[homes]\n   inherit permissions = yes/
-    /writable/! s/\[homes\]/[homes]\n   writable = yes/
-}' /etc/samba/smb.conf
+# Prompt the user to set a Samba password for their user
+USER=$(logname)
+sudo smbpasswd -a $USER
 
-# Verify smb.conf syntax
-testparm -s || {
-    echo "Error: Invalid smb.conf configuration"
-    exit 1
-}
+# Restart samba to apply changes
+systemctl restart smbd
 
-# Enable and start Samba services
-systemctl enable smbd nmbd
-systemctl restart smbd nmbd || {
-    echo "Error: Failed to restart Samba services"
-    exit 1
-}
-
-# Configure firewall if UFW is present
-if command -v ufw >/dev/null 2>&1; then
-    ufw allow samba
-fi
-
-# Get network information more reliably
+# Print network info and SMB URL
 IP_ADDR=$(hostname -I | awk '{print $1}')
-HOSTNAME=$(hostname)
-
-echo "Samba configuration completed successfully!"
-echo "A backup of your original configuration has been saved to: /etc/samba/smb.conf.backup"
-echo "Connect using these URLs:"
-echo "smb://$IP_ADDR/$LOGGED_IN_USER"
-echo "smb://$HOSTNAME.local/$LOGGED_IN_USER"
-echo ""
-echo "Important next steps:"
-echo "1. Set your Samba password by running:"
-echo "   sudo smbpasswd -a $LOGGED_IN_USER"
-echo ""
-echo "2. Make sure your user has proper Unix permissions:"
-echo "   sudo chmod 755 /home/$LOGGED_IN_USER"
+HOSTNAME=$(hostname | awk '{print}')
+USERNAME=$(logname)
+echo "Samba is now configured. Connect using your current username and password."
+echo "Your SMB URL is: smb://$IP_ADDR/$USERNAME"
+echo "Your SMB URL is: smb://$HOSTNAME.local/$USERNAME"
+echo "Next Step: sudo nano /etc/samba/smb.conf to make [homes] read only = no,"
+echo" create mask = 0750, directory mask = 0750 then systemctl restart smbd" 
