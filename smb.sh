@@ -18,8 +18,7 @@ LOGGED_IN_USER=$(logname)
 echo "The user logged in is: $LOGGED_IN_USER"
 
 
-sed -i '/\[homes\]/,/\[/ s/^[[:space:]]*read only[[:space:]]*=[[:space:]]*yes/\tread only = no/' /etc/samba/smb.conf &&
-sed -i '/\[homes\]/a\   valid users = %S\n   inherit permissions = yes' /etc/samba/smb.conf
+sed -i -e '/\[homes\]/,/\[/ s/^[[:space:]]*read only[[:space:]]*=[[:space:]]*yes/\tread only = no/' -e '/\[homes\]/a\   valid users = %S\n   inherit permissions = yes' /etc/samba/smb.confsed -i '/\[homes\]/a\   valid users = %S\n   inherit permissions = yes' /etc/samba/smb.conf
 
 
 systemctl restart smbd
