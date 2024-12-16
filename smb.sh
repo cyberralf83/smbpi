@@ -18,10 +18,6 @@ SMB_CONF="/etc/samba/smb.conf"
 
 echo "The user logged in is: $LOGGED_IN_USER"
 
-sed -i "/\[homes\]/,/\[/{s/read only = yes/read only = no/}" /etc/samba/smb.conf
-sed -i '/\[homes\]/a\   valid users = %S' "$SMB_CONF"
-sed -i '/\[homes\]/a\   inherit permissions = yes' "$SMB_CONF"
-
 systemctl restart smbd
 systemctl restart nmbd
 
