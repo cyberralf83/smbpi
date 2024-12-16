@@ -13,9 +13,8 @@ fi
 apt-get update
 apt-get install -y samba
 
-# Backup the original smb.conf with timestamp
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-cp /etc/samba/smb.conf "/etc/samba/smb.conf.backup_${TIMESTAMP}"
+# Backup the original smb.conf without timestamp
+cp /etc/samba/smb.conf /etc/samba/smb.conf.backup
 
 # Get logged in user more reliably
 if [ -n "$SUDO_USER" ]; then
@@ -54,8 +53,8 @@ systemctl restart smbd nmbd || {
     exit 1
 }
 
-# Set up Samba password for the logged-in user
-echo "Setting up Samba password for $LOGGED_IN_USER"
+# Set up Samba password interactively
+echo "Please set a Samba password for $LOGGED_IN_USER"
 smbpasswd -a "$LOGGED_IN_USER"
 
 # Configure firewall if UFW is present
@@ -68,7 +67,7 @@ IP_ADDR=$(hostname -I | awk '{print $1}')
 HOSTNAME=$(hostname)
 
 echo "Samba configuration completed successfully!"
-echo "A backup of your original configuration has been saved to: /etc/samba/smb.conf.backup_${TIMESTAMP}"
+echo "A backup of your original configuration has been saved to: /etc/samba/smb.conf.backup"
 echo "Connect using these URLs:"
 echo "smb://$IP_ADDR/$LOGGED_IN_USER"
 echo "smb://$HOSTNAME.local/$LOGGED_IN_USER"
