@@ -14,12 +14,13 @@ apt-get install -y samba samba-common-bin
 cp /etc/samba/smb.conf /etc/samba/smb.conf.backup
 
 LOGGED_IN_USER=$(logname)
+SMB_CONF="/etc/samba/smb.conf"
 
 echo "The user logged in is: $LOGGED_IN_USER"
 
-
-sed -i -e '/\[homes\]/,/\[/ s/^[[:space:]]*read only[[:space:]]*=[[:space:]]*yes/\tread only = no/' -e '/\[homes\]/a\   valid users = %S\n   inherit permissions = yes' /etc/samba/smb.confsed -i '/\[homes\]/a\   valid users = %S\n   inherit permissions = yes' /etc/samba/smb.conf
-
+sed -i '/\[homes\]/,/\[/ s/read only = yes/read only = no/' "$SMB_CONF"
+sed -i '/\[homes\]/a\   valid users = %S' "$SMB_CONF"
+sed -i '/\[homes\]/a\   inherit permissions = yes' "$SMB_CONF"
 
 systemctl restart smbd
 systemctl restart nmbd
