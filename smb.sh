@@ -3,34 +3,69 @@
 # Exit on error
 set -e
 
+# Get the current user
+USER=$(logname)
+echo "Setting up Samba for user: $USER"
+
 # Update package list and install samba
+echo "Installing Samba..."
 apt-get update
 apt-get install -y samba
 
-# Backup the original smb.conf
-cp /etc/samba/smb.conf /etc/samba/smb.conf.bak
+# Backup the original smb.conf if not already backed up
+if [ ! -f /etc/samba/smb.conf.bak ]; then
+    echo "Backing up original smb.conf..."
+    cp /etc/samba/smb.conf /etc/samba/smb.conf.bak
+fi
 
-# Add configuration to share the home directories
-LOGGED_IN_USER=$(logname)
+# Configure the [homes] share with read/write access
+# This keeps the system defaults but adds/updates the homes section
+echo "Configuring Samba share for home directory..."
 
-echo "The user logged in is: $LOGGED_IN_USER"
+# Remove existing [homes] section if present
+sed -i '/^\[homes\]/,/^\[/{ /^\[homes\]/!{ /^\[/!d; }; }' /etc/samba/smb.conf
+sed -i '/^\[homes\]/d' /etc/samba/smb.conf
+
+# Append the homes configuration to the end of the file
+cat >> /etc/samba/smb.conf << EOF
+
+[homes]
+   comment = Home Directories
+   browseable = no
+   read only = no
+   create mask = 0750
+   directory mask = 0750
+   valid users = %S
+EOF
+
+echo "Samba configuration updated."
+
+# Set Samba password
+echo "Setting Samba password for user: $USER"
+if [ -n "$SMB_PASSWORD" ]; then
+    # Non-interactive mode with password from environment variable
+    echo "Using password from SMB_PASSWORD environment variable..."
+    (echo "$SMB_PASSWORD"; echo "$SMB_PASSWORD") | smbpasswd -a $USER
+else
+    # Interactive mode - prompt for password
+    smbpasswd -a $USER
+fi
 
 # Restart samba to apply changes
+echo "Restarting Samba service..."
 systemctl restart smbd
-
-# Prompt the user to set a Samba password for their user
-USER=$(logname)
-sudo smbpasswd -a $USER
-
-# Restart samba to apply changes
-systemctl restart smbd
+systemctl restart nmbd
 
 # Print network info and SMB URL
 IP_ADDR=$(hostname -I | awk '{print $1}')
-HOSTNAME=$(hostname | awk '{print}')
-USERNAME=$(logname)
-echo "Samba is now configured. Connect using your current username and password."
-echo "Your SMB URL is: smb://$IP_ADDR/$USERNAME"
-echo "Your SMB URL is: smb://$HOSTNAME.local/$USERNAME"
-echo "Next Step: sudo nano /etc/samba/smb.conf to make [homes] read only = no,"
-echo" create mask = 0750, directory mask = 0750 then systemctl restart smbd" 
+HOSTNAME=$(hostname)
+echo ""
+echo "=========================================="
+echo "Samba installation complete!"
+echo "=========================================="
+echo "Connect using username: $USER"
+echo "SMB URL: smb://$IP_ADDR/$USER"
+echo "SMB URL: smb://$HOSTNAME.local/$USER"
+echo ""
+echo "You now have read/write access to your home directory."
+echo "==========================================" 
