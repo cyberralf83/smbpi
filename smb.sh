@@ -40,9 +40,16 @@ EOF
 
 echo "Samba configuration updated."
 
-# Prompt the user to set a Samba password
+# Set Samba password
 echo "Setting Samba password for user: $USER"
-smbpasswd -a $USER
+if [ -n "$SMB_PASSWORD" ]; then
+    # Non-interactive mode with password from environment variable
+    echo "Using password from SMB_PASSWORD environment variable..."
+    (echo "$SMB_PASSWORD"; echo "$SMB_PASSWORD") | smbpasswd -a $USER
+else
+    # Interactive mode - prompt for password
+    smbpasswd -a $USER
+fi
 
 # Restart samba to apply changes
 echo "Restarting Samba service..."
